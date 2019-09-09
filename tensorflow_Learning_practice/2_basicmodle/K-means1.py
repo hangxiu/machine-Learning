@@ -10,9 +10,6 @@ def get_distance(p1, p2):
     distance = np.sqrt(sum(map(lambda x: x**2, diff)))
     return distance
  
- 
-# 计算多个点的中心
-# cluster = [[1,2,3], [-2,1,2], [9, 0 ,4], [2,10,4]]
 def calc_center_point(cluster):
     N = len(cluster)
     m = np.matrix(cluster).transpose().tolist()
@@ -25,99 +22,116 @@ def calc_var_point(points):
     return var_point
 
  
-# 检查两个点是否有差别
 def check_center_diff(center, new_center):
-    n = len(center)
+    # n = len(center)
     for c, nc in zip(center, new_center):
         if c != nc:
             return False
     return True
  
  
-# K-means算法的实现
+# K-means
 def K_means(points, center_points):
  
-    N = len(points)         # 样本个数
-    n = len(points[0])      # 单个样本的维度
+    # N = len(points)         # 样本个数
+    # n = len(points[0])      # 单个样本的维度
     k = len(center_points)  # k值大小
  
     tot = 0
-    while True:             # 迭代
-        temp_center_points = [] # 记录中心点
+    err = []
+    while True:   
+        sub_err = []         
+        temp_center_points = [] 
  
-        clusters = []       # 记录聚类的结果
+        clusters = []       
         for c in range(0, k):
-            clusters.append([]) # 初始化
+            clusters.append([]) 
  
-        # 针对每个点，寻找距离其最近的中心点（寻找组织）
         for i, data in enumerate(points):
             distances = []
             for center_point in center_points:
                 distances.append(get_distance(data, center_point))
-            index = distances.index(min(distances)) # 找到最小的距离的那个中心点的索引，
+            index = distances.index(min(distances))
             # print(index)
-            clusters[index].append(data)    # 那么这个中心点代表的簇，里面增加一个样本
+            clusters[index].append(data)  
  
         tot += 1
         print(tot, '次迭代   ')
         k = len(clusters)
         colors = ['r.', 'g.', 'b.', 'k.', 'y.', 'c.', 'm.']
-        for i, cluster in enumerate(clusters):
-            # print(tot)
-            if tot < 7:
-                data = np.array(cluster)
-                data_x = [x[0] for x in data]
-                data_y = [x[1] for x in data]
-                # fig = plt.figure()
-                plt.title("K-means %d iter" % tot)
-                plt.subplot(2, 3, tot)
-                plt.xlabel("X")
-                plt.ylabel("Y")
-                plt.plot(data_x, data_y, colors[random.randint(0, 6)])
-                plt.axis([0, 1000, 0, 1000])
-                plt.xticks([x for x in range(1000 + 1) if x % 100 ==0])
-                plt.yticks([y for y in range(1000 + 1) if y % 100 ==0])
- 
-        # 重新计算中心点（该步骤可以与下面判断中心点是否发生变化这个步骤，调换顺序）
+        # for i, cluster in enumerate(clusters):
+        #     if tot < 6:
+        #         data = np.array(cluster)
+        #         data_x = [x[0] for x in data]
+        #         data_y = [x[1] for x in data]
+        #         tott = tot - 1
+        #         plt.title("K-means %d iter" %tott)
+        #         plt.subplot(2, 2, tot)
+        #         plt.xlabel("X")
+        #         plt.ylabel("Y")
+        #         plt.plot(data_x, data_y, colors[random.randint(0, 6)])
+        #         plt.axis([0, 1000, 0, 1000])
+        #         plt.xticks([x for x in range(1000 + 1) if x % 100 ==0])
+        #         plt.yticks([y for y in range(1000 + 1) if y % 100 ==0])
+
+        # 重新计算中心点
         for cluster in clusters:
             temp_center_points.append(calc_center_point(cluster))
  
-        # 在计算中心点的时候，需要将原来的中心点算进去
         for j in range(0, k):
             if len(clusters[j]) == 0:
                 temp_center_points[j] = center_points[j]
  
-        # 判断中心点是否发生变化：即，判断聚类前后样本的类别是否发生变化
+        # 判断中心点是否发生变化
+        error = cal_error(clusters, points)
+        print("第 %d 迭代, 错误率%f" %(tot,error))
+        sub_err.append(tot)
+        sub_err.append(error)
+        err.append(sub_err)
         for c, nc in zip(center_points, temp_center_points):
             if not check_center_diff(c, nc):
-                center_points = temp_center_points[:]   # 复制一份
+                center_points = temp_center_points[:]   
                 break
-        else:   # 如果没有变化，那么退出迭代，聚类结束
+        else:   
             break
+        
         # print(len(center_points))
+    plt.title("K-means %d iter" %tot)
     plt.show()
-    return clusters # 返回聚类的结果
+    return clusters, err 
  
-def show_phote(clusters):
+def show_phote(clusters, mean_clusters_points):
     colors = ['r.', 'g.', 'b.', 'k.', 'y.', 'c.', 'm.']
     for i, cluster in enumerate(clusters):
         data = np.array(cluster)
         data_x = [x[0] for x in data]
         data_y = [x[1] for x in data]
-                # fig = plt.figure()
-    # plt.subplot(2, 3, tot)
         plt.plot(data_x, data_y, colors[random.randint(0, 6)])
         plt.axis([0, 1000, 0, 1000])
         plt.xticks([x for x in range(1000 + 1) if x % 100 ==0])
         plt.yticks([y for y in range(1000 + 1) if y % 100 ==0])
-    plt.scatter(np.array(center_points)[:,0],np.array(center_points)[:,1],marker="*",c="red"
+    plt.scatter(np.array(mean_clusters_points)[:,0],np.array(mean_clusters_points)[:,1],marker="*",c="red"
                 ,label="cluster center")
     plt.legend()
+    plt.title('final cluster')
     plt.show()
- 
+
+def show_err(errs):
+    x = [x[0] for x in errs]
+    y = [y[1] for y in errs]
+    plt.figure(figsize=(6, 4))
+    plt.plot(x, y, color='blue', linewidth=1)
+    plt.xlabel('iter num')
+    plt.ylabel('error rate %')
+    plt.title('error rate %')
+    plt.ylim(0., 14.)
+    plt.xlim(0, 15)
+    plt.show()
+
+
+
 def input_data():
     N = 1000
-    # 产生点的区域
     # areas = [area_1, area_2, area_3, area_4, area_5]
     areas = []
     row = [x for x in range(0, N + 1, 50)]
@@ -136,7 +150,7 @@ def input_data():
             sub_areas = sub_areas[0:2]
         flag += 1
     # print(areas)
-    k = len(areas)
+    # k = len(areas)
  
     # 在各个区域内，随机产生一些点
     points = []
@@ -156,10 +170,16 @@ def input_data():
         mean_points.append(calc_center_point(sub_points))
  
     center_points = []
+    i = 0
     for area in areas:
         sub_areas = []
-        sub_areas.append((area[0] + area[1]) // 2)
-        sub_areas.append((area[3] + area[2]) // 2)
+        # sub_areas.append((area[0] + area[1]) // 2)
+        # sub_areas.append((area[3] + area[2]) // 2)
+        sub_areas.append(area[0] + random.randint(0, 50))
+        sub_areas.append(area[2] + random.randint(0, 100))
+        # sub_areas.append(random.randint(0, 1001))
+        # sub_areas.append(random.randint(0, 1001))
+
         center_points.append(sub_areas)
     # print(len(points))
     # print(len(center_points))
@@ -182,7 +202,7 @@ def plt_mean_photo(mean_clusters_points, mean_points):
     data = np.array(mean_clusters_points)
     data_x = [x[0] for x in data]
     data_y = [x[1] for x in data]
-                # fig = plt.figure()
+            
     plt.subplot(2, 1, 2)
     plt.plot(data_x, data_y, colors[random.randint(0, 6)])
     plt.axis([0, 1000, 0, 1000])
@@ -200,19 +220,20 @@ def plt_var_photo(var_clusters_points, var_points):
     data = np.array(var_points)
     data_x = [x[0] for x in data]
     data_y = [x[1] for x in data]
-                # fig = plt.figure()
+        
     plt.subplot(2, 1, 1)
     plt.plot(data_x, data_y, colors[random.randint(0, 6)])
     plt.axis([0, 500, 0, 1500])
     plt.title("cluster front points vars")
     plt.xlabel("X")
     plt.ylabel("Y")
+    plt.grid()
     plt.xticks([x for x in range(500 + 1) if x % 100 ==0])
     plt.yticks([y for y in range(1500 + 1) if y % 100 ==0])
     data = np.array(var_clusters_points)
     data_x = [x[0] for x in data]
     data_y = [x[1] for x in data]
-                # fig = plt.figure()
+            
     plt.subplot(2, 1, 2)
     plt.plot(data_x, data_y, colors[random.randint(0, 6)])
     plt.axis([0, 500, 0, 1500])
@@ -225,16 +246,47 @@ def plt_var_photo(var_clusters_points, var_points):
     plt.grid()
     plt.show()
 
+def SSE(mean_points, points):
+    SSE = 0
+    pos = 0
+    for mean_point in mean_points:
+        for point in points[pos: pos+10]:
+            SSE += get_distance(point, mean_point)
+            pos += 10
+    return SSE 
+
+def cal_error(clusters, points):
+    cnt = 0
+    pos = 0
+    for cluster in clusters:
+
+        for po in points[pos: pos+10]:
+            if po not in cluster:
+                cnt += 1
+            # SSE_back += get_distance(point,center_points_cluster)
+        pos += 10
+    return cnt / 1000 * 100
+
 if __name__ == '__main__':
- 
     points, center_points, mean_points, var_points = input_data()
-    clusters = K_means(points, center_points)
-    show_phote(clusters)
+    clusters, errs= K_means(points, center_points)
+    print(errs)
+  
     mean_clusters_points = []
     var_clusters_points = []
+    SSE_back = 0
+    error = cal_error(clusters, points)
+    print(error)
     for cluster in clusters:
-        mean_clusters_points.append(calc_center_point(cluster))
+        center_points_cluster = calc_center_point(cluster)
+        mean_clusters_points.append(center_points_cluster)
         var_clusters_points.append(calc_var_point(cluster))
     # print(var_clusters_points)
+    # print(cnt)
+    show_phote(clusters, mean_clusters_points)
     plt_mean_photo(mean_clusters_points, mean_points)
     plt_var_photo(var_clusters_points, var_points)
+    SSE_front = SSE(mean_points, points)
+    show_err(errs)
+    # SSE_back = SSE(mean_clusters_points, clusters)
+    # print("SSE 为: ", SSE_front, SSE_back)
